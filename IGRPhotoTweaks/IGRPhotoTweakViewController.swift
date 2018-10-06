@@ -14,11 +14,13 @@ public protocol IGRPhotoTweakViewControllerDelegate : class {
     /**
      Called on image cropped.
      */
-    func photoTweaksController(_ controller: IGRPhotoTweakViewController, didFinishWithCroppedImage croppedImage: UIImage)
+    func photoTweaksController(_ controller: IGRPhotoTweakViewController, didFinishWithCroppedImage croppedImage: UIImage, unfilteredImage unfilteredImage: UIImage)
     /**
      Called on cropping image canceled
      */
-    
+  
+    func photoTweaksControllerDidCrop(_ controller: IGRPhotoTweakViewController)
+  
     func photoTweaksControllerDidCancel(_ controller: IGRPhotoTweakViewController)
 }
 
@@ -30,6 +32,7 @@ open class IGRPhotoTweakViewController: UIViewController {
      Image to process.
      */
     public var image: UIImage!
+    public var unfilteredImage: UIImage!
     
     /*
      The optional photo tweaks controller delegate.
@@ -46,7 +49,6 @@ open class IGRPhotoTweakViewController: UIViewController {
     //MARK: - Private VARs
     
     internal lazy var photoView: IGRPhotoTweakView! = { [unowned self] by in
-        
         let photoView = IGRPhotoTweakView(frame: self.view.bounds,
                                           image: self.image,
                                           customizationDelegate: self)
@@ -67,7 +69,13 @@ open class IGRPhotoTweakViewController: UIViewController {
         self.setupThemes()
         self.setupSubviews()
     }
-    
+  
+    open override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+      
+        resetFrame()
+    }
+  
     override open func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -97,7 +105,22 @@ open class IGRPhotoTweakViewController: UIViewController {
     }
     
     // MARK: - Public
-    
+  
+    public func updateImage(image: UIImage) {
+        self.image = image
+        resetFrame()
+    }
+  
+    public func resetFrame() {
+      photoView.removeFromSuperview()
+      photoView = IGRPhotoTweakView(frame: self.view.bounds,
+                                    image: self.image,
+                                    customizationDelegate: self)
+      photoView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      self.view.addSubview(photoView)
+      setupSubviews()
+    }
+  
     public func resetView() {
         self.photoView.resetView()
         self.stopChangeAngle()
@@ -121,21 +144,31 @@ open class IGRPhotoTweakViewController: UIViewController {
         let yScale: CGFloat = sqrt(t.b * t.b + t.d * t.d)
         transform = transform.scaledBy(x: xScale, y: yScale)
         
-        if let fixedImage = self.image.cgImageWithFixedOrientation() {
+        if let fixedImage = self.image.cgImageWithFixedOrientation(),
+          let unfilteredFixedImage = self.unfilteredImage.cgImageWithFixedOrientation() {
+          
             let imageRef = fixedImage.transformedImage(transform,
                                                        sourceSize: self.image.size,
                                                        outputWidth: self.image.size.width,
                                                        cropSize: self.photoView.cropView.frame.size,
                                                        imageViewSize: self.photoView.photoContentView.bounds.size)
-            
+          
+          let unfilteredImageRef = unfilteredFixedImage.transformedImage(transform,
+                                                                         sourceSize: self.image.size,
+                                                                         outputWidth: self.image.size.width,
+                                                                         cropSize: self.photoView.cropView.frame.size,
+                                                                         imageViewSize: self.photoView.photoContentView.bounds.size)
+          
             let image = UIImage(cgImage: imageRef)
-            
+            let unfilteredImage = UIImage(cgImage: unfilteredImageRef)
+          
             if self.isAutoSaveToLibray {
                 
                 self.saveToLibrary(image: image)
             }
             
-            self.delegate?.photoTweaksController(self, didFinishWithCroppedImage: image)
+            self.delegate?.photoTweaksController(self, didFinishWithCroppedImage: image, unfilteredImage: unfilteredImage)
+          //photoTweaksController(self, didFinishWithCroppedImage: image)
         }
     }
     
