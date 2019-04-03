@@ -14,7 +14,7 @@ public protocol IGRPhotoTweakViewControllerDelegate : class {
     /**
      Called on image cropped.
      */
-    func photoTweaksController(_ controller: IGRPhotoTweakViewController, didFinishWithCroppedImage croppedImage: UIImage, unfilteredImage unfilteredImage: UIImage)
+    func photoTweaksController(_ controller: IGRPhotoTweakViewController, didFinishWithCroppedImage croppedImage: UIImage, unfilteredImage: UIImage)
     /**
      Called on cropping image canceled
      */
@@ -90,7 +90,7 @@ open class IGRPhotoTweakViewController: UIViewController {
     }
     
     fileprivate func setupSubviews() {
-        self.view.sendSubviewToBack(self.photoView)
+      self.view.sendSubviewToBack(self.photoView)
     }
     
     open func setupThemes() {
